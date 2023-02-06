@@ -108,6 +108,10 @@ RUN apt-get -qq update && apt-get -q install -y \
   && apt-get -qq clean
 
 USER $USERNAME
+
+ADD 0001-Restore-GLX-context-after-OGRE-plugin-loading-finish.patch /
+RUN cd $GZ_WS/src/gz-rendering && git apply /0001-*.patch
+
 RUN cd $GZ_WS && colcon build --merge-install --cmake-args -DBUILD_TESTING=OFF
 
 USER root

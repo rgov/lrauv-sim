@@ -1,0 +1,43 @@
+From ff15ed135bc01240f6b93e6e978c2096fe48bc3e Mon Sep 17 00:00:00 2001
+From: Martin Pecka <peckama2@fel.cvut.cz>
+Date: Wed, 21 Dec 2022 02:58:09 +0100
+Subject: [PATCH] Restore GLX context after OGRE plugin loading finishes.
+ (#794)
+
+The probing process OGRE uses might change the current GLX context, e.g. when used with VirtualGL.
+
+Restore GLX context after loading the OGRE plugin. It is possible the loading process changes the current GLX context.
+
+Signed-off-by: Martin Pecka <peckama2@fel.cvut.cz>
+---
+ ogre2/src/Ogre2RenderEngine.cc | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/ogre2/src/Ogre2RenderEngine.cc b/ogre2/src/Ogre2RenderEngine.cc
+index 2177d42a..3d81c167 100644
+--- a/ogre2/src/Ogre2RenderEngine.cc
++++ b/ogre2/src/Ogre2RenderEngine.cc
+@@ -589,8 +589,20 @@ void Ogre2RenderEngine::LoadPlugins()
+       // load the plugin
+       try
+       {
++#if HAVE_GLX
++        // Store the current GLX context in case OGRE plugin init changes it
++        const auto context = glXGetCurrentContext();
++        const auto display = glXGetCurrentDisplay();
++        const auto drawable = glXGetCurrentDrawable();
++#endif
++
+         // Load the plugin into OGRE
+         this->ogreRoot->loadPlugin(filename, piter->bOptional, nullptr);
++
++#if HAVE_GLX
++        // Restore GLX context
++        glXMakeCurrent(display, drawable, context);
++#endif
+       }
+       catch(Ogre::Exception &)
+       {
+-- 
+2.25.1
+

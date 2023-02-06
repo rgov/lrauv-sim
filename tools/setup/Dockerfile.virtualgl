@@ -1,0 +1,32 @@
+FROM osrf/lrauv
+
+USER root
+
+RUN apt-get -qq update && apt-get -q install -y \
+    iproute2 \
+    libgl1-mesa-glx \
+    libegl1-mesa \
+  && rm -rf /var/lib/apt/lists/* \
+  && apt-get -qq clean
+
+#RUN wget -O virtualgl.deb https://sourceforge.net/projects/virtualgl/files/3.0.90%20%283.1beta1%29/virtualgl_3.0.90_$(dpkg --print-architecture).deb/download \
+#  && dpkg -i virtualgl.deb \
+#  && rm -f virtualgl.deb
+
+# Patched version of VirtualGL from @pec1
+#    https://github.com/gazebosim/gz-rendering/issues/526#issuecomment-1360223613
+#
+# The fix is accepted into VirtualGL upstream and will be avaiable in an
+# upcoming release.
+RUN wget https://github.com/gazebosim/gz-rendering/files/10272578/virtualgl_3.0.91_amd64-fixed.zip \
+   && unzip virtualgl_3.0.91_amd64-fixed.zip \
+   && dpkg -i virtualgl_3.0.91_amd64-fixed.deb \
+   && rm -f *.zip *.deb
+
+#RUN usermod -a -G vglusers $USERNAME root
+
+RUN chmod u+s $(command -v ip)
+
+USER $USERNAME
+
+CMD vglrun gz sim -v4 tethys_at_empty_environment.sdf
