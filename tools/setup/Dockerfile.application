@@ -1,0 +1,14 @@
+FROM mbari/lrauv-gazebo-sim AS app
+
+USER root
+
+RUN apt-get -qq update && apt-get -q install -y \
+    iproute2 \
+    tcpdump \
+    strace \
+  && rm -rf /var/lib/apt/lists/* \
+  && apt-get -qq clean
+
+RUN chmod u+s $(command -v ip)
+
+USER $USERNAME
