@@ -1,18 +1,11 @@
-# LRAUV Simulation
+This is Ryan's fork of [osrf/lrauv](https://github.com/osrf/lrauv) for running the LRAUV Gazebo simulator and vehicle application:
 
-This repository contains the libraries, plugins and other files for the simulation of the Tethys-class Long-Range AUV (LRAUV) from the Monterey Bay Aquarium Research Institute (MBARI).
+Both Gazebo and the LRAUV application run under separate Docker containers.
 
-For documentation regarding this repository please refer to the [wiki](https://github.com/osrf/lrauv/wiki).
+Gazebo runs under VirtualGL in order to take advantage of 3D graphics acceleration, even when accessed over VNC.
 
-<p align="center">
-  <img width="40%" src="https://raw.githubusercontent.com/wiki/osrf/lrauv/media/LRUAV_3D.gif" alt="LRAUV 3D">
-</p>
+The containers communicate via Multicast UDP over a macvlan interface. (It might be possible to use regular Docker networking and the `GZ_RELAY` environment variable instead.)
 
-Source files, models, and plugins relevant to a general audience are upstreamed on an irregular basis to [Gazebo libraries](https://gazebosim.org), the top-level library being [gz-sim](https://github.com/gazebosim/gz-sim). Upstreamed files may eventually be removed from the repository.
+The `dc_run_sim.sh` script handles X11 forwarding to the Gazebo container so that the GUI appears on screen.
 
-Standalone, the repository contains the environment and plugins necessary to simulate an underwater vehicle in Gazebo. Integrated with the real-world LRAUV controller code, the binaries of which are provided to the public on MBARI's DockerHub, the simulated robot can be controlled using the same code executed on the real robot. This enables the validation of scientific missions for oceanography research.
-
-## Citations
-If you use this simulator for your project, please cite our paper:
-
-> Timothy R. Player, Arjo Chakravarty, Mabel M. Zhang, Ben Yair Raanan, Brian Kieft, Yanwu Zhang, and Brett Hobson, "From Concept to Field Tests: Accelerated Development of Multi-AUV Missions Using a High-Fidelity Faster-than-Real-Time Simulator," in *IEEE International Conference on Robotics and Automation (ICRA)*, May 2023.
+Last used successfully on 2023-02-06 with `mbari/lrauv-gazebo-sim@sha256:d1ecb9c2f07149de1457814b1585809677181c176ce8dc4c1d4b30b972ca24c9`.
