@@ -1,0 +1,86 @@
+version: '3.9'
+
+services:
+  sim:
+    image: osrf/lrauv:virtualgl
+
+    user: "$DOCKER_USER"
+
+    command: "/bin/sh -c \"ip route add 224.0.0.0/4 dev eth1 && ip addr && ip route && exec vglrun +v gz sim -v4 tethys_at_empty_environment.sdf\""
+
+    environment:
+      DISPLAY: "$DISPLAY"
+      #LCM_DEFAULT_URL: "udpm://239.255.76.67:7667?ttl=1"
+      GZ_PARTITION: lrauv-sim
+      GZ_IP: 10.0.1.2
+      GZ_VERBOSE: 1
+
+    cap_add:
+      - NET_ADMIN
+
+    devices:
+      - "/dev/dri:/dev/dri"
+
+    volumes:
+      - type: bind
+        source: $HOME/.Xauthority.docker
+        target: /home/developer/.Xauthority
+        read_only: true
+
+      - type: bind
+        source: /tmp/.X11-unix
+        target: /tmp/.X11-unix
+        read_only: true
+
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+    networks:
+      default:
+      lrauvnet:
+        ipv4_address: 10.0.1.2
+
+
+  lrauv-app:
+    image: mbari/lrauv-gazebo-sim:rzg
+
+    command: sh -c "ip route add 224.0.0.0/4 dev eth1 && ip addr && ip route && cd $$LRAUV_APP && exec bin/LRAUV -x 'run RegressionTests/GazeboTests/testYoYoCircle.xml quitAtEnd'"
+
+    environment:
+      #LCM_DEFAULT_URL: "udpm://239.255.76.67:7667?ttl=1"
+      GZ_PARTITION: lrauv-sim
+      #GZ_RELAY: 10.0.1.2
+      GZ_IP: 10.0.1.3
+      GZ_VERBOSE: 1
+
+    cap_add:
+      - NET_ADMIN
+      - SYS_PTRACE
+
+    volumes:
+      - type: bind
+        source: ./Config
+        target: /home/developer/lrauv_ws/src/lrauv-application/Config
+
+      - type: bind
+        source: ./Data
+        target: /home/developer/lrauv_ws/src/lrauv-application/Data
+
+    networks:
+      default:
+      lrauvnet:
+        ipv4_address: 10.0.1.3
+
+
+networks:
+  lrauvnet:
+    driver: macvlan
+    ipam:
+      config:
+        - subnet: "10.0.1.0/24"
+          gateway: "10.0.1.1"
