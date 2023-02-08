@@ -1,0 +1,60 @@
+# syntax=docker/dockerfile:1.4
+
+FROM mbari/lrauv-gazebo-sim AS app
+
+
+
+FROM ubuntu:focal AS like-nvidia
+
+# Set up the user account like the NVIDIA base image
+ARG USERNAME=developer
+RUN addgroup --gid 1000 $USERNAME \
+ && adduser --uid 1000 --ingroup $USERNAME --home /home/$USERNAME --shell /bin/bash $USERNAME
+
+# Install fixuid and the entrypoint script
+COPY --link --from=app /usr/local/bin/fixuid /usr/local/bin/fixuid
+COPY --link --from=app /etc/fixuid /etc/fixuid
+
+RUN >/entrypoint.sh echo '#!/usr/bin/env bash\n\
+echo command is "$@"\n\
+set -eo pipefail\n\
+eval $(fixuid)\n\
+exec "$@"' \
+  && chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
+
+
+
+FROM like-nvidia AS final
+
+# Install LRAUV application dependencies
+RUN apt-get -qq update && apt-get -q install -y \
+        libglib2.0-0 \
+        libprotobuf17 \
+        libtinyxml2-6a \
+        libzmq5 \
+  && rm -rf /var/lib/apt/lists/* \
+  && apt-get -qq clean
+
+# Copy 
+COPY --link --from=app --chown=developer:developer \
+    /home/developer/gz_ws/install/lib/libgz-math*.so \
+    /home/developer/gz_ws/install/lib/libgz-msgs*.so \
+    /home/developer/gz_ws/install/lib/libgz-transport*.so \
+    /home/developer/gz_ws/install/lib/
+COPY --link --from=app --chown=developer:developer \
+    /home/developer/lrauv_ws/install/lib/liblrauv_gazebo_messages.so \
+    /home/developer/lrauv_ws/install/lib/
+COPY --link --from=app --chown=developer:developer /home/developer/mbari_ws /home/developer/mbari_ws
+COPY --link --from=app --chown=developer:developer /usr/local/lib/lib*.so /usr/local/lib/
+
+# Configure dynamic loader search paths
+RUN echo /home/developer/gz_ws/install/lib/ > /etc/ld.so.conf.d/gz_ws.conf \
+ && echo /home/developer/lrauv_ws/install/lib/ > /etc/ld.so.conf.d/lrauv_ws.conf \
+ && ldconfig
+
+# Set LRAUV application as default command
+USER developer
+WORKDIR /home/developer/mbari_ws/src/lrauv-application
+CMD bin/LRAUV
