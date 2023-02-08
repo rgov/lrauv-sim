@@ -16,7 +16,6 @@ COPY --link --from=app /usr/local/bin/fixuid /usr/local/bin/fixuid
 COPY --link --from=app /etc/fixuid /etc/fixuid
 
 RUN >/entrypoint.sh echo '#!/usr/bin/env bash\n\
-echo command is "$@"\n\
 set -eo pipefail\n\
 eval $(fixuid)\n\
 exec "$@"' \
@@ -55,6 +54,7 @@ RUN echo /home/developer/gz_ws/install/lib/ > /etc/ld.so.conf.d/gz_ws.conf \
  && ldconfig
 
 # Set LRAUV application as default command
-USER developer
+ARG USERNAME
+USER $USERNAME
 WORKDIR /home/developer/mbari_ws/src/lrauv-application
 CMD bin/LRAUV
